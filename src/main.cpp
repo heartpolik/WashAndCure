@@ -2,14 +2,9 @@
 #include <Arduino.h>
 #include <U8g2lib.h>
 #include "timer-api.h"
-
 #include <Wire.h>
 
 U8G2_SSD1306_128X64_NONAME_1_SW_I2C u8g2(U8G2_R0, /* clock=*/SCL, /* data=*/SDA, /* reset=*/U8X8_PIN_NONE); // All Boards without Reset of the Display
-
-// This example shows a scrolling text.
-// If U8G2_16BIT is not set (default), then the pixel width of the text must be lesser than 128
-// If U8G2_16BIT is set, then the pixel width an be up to 32000
 
 const int modesCount = 2;
 const int timesCount = 5;
@@ -73,13 +68,10 @@ void actionScreen()
   u8g2.firstPage();
   do
   {
-
     u8g2.setFontMode(1);  /* activate transparent font mode */
     u8g2.setDrawColor(1); /* color 1 for the box */
     u8g2.drawBox(0, 32, 128, 64);
-    // u8g2.setFont(u8g2_font_logisoso16_tf);
     u8g2.drawStr((127 - u8g2.getStrWidth(activeModes[mode])) / 2, firstStringPos, activeModes[mode]);
-    // u8g2.setFont(u8g2_font_logisoso26_tf);
     u8g2.setDrawColor(2);
     u8g2.drawStr((127 - u8g2.getStrWidth(secToStr)) / 2, secondStringPos, secToStr);
 
@@ -91,12 +83,9 @@ void menuScreen()
   u8g2.firstPage();
   do
   {
-    // u8g2.setFont(u8g2_font_logisoso20_tf);
-
     u8g2.setFontMode(1);  /* activate transparent font mode */
     u8g2.setDrawColor(1); /* color 1 for the box */
     u8g2.drawBox(0, 0, 128, 31);
-    // u8g2.setFont(u8g2_font_inb16_mf);
     u8g2.drawStr((127 - u8g2.getStrWidth(minToStr)) / 2, secondStringPos, minToStr);
     u8g2.setDrawColor(2);
     u8g2.drawStr((127 - u8g2.getStrWidth(modes[mode])) / 2, firstStringPos, modes[mode]);
@@ -113,18 +102,15 @@ void rotateMotor()
     digitalWrite(coil2Pin, LOW);
     digitalWrite(coil3Pin, LOW);
     break;
-
   case 2:
     digitalWrite(coil1Pin, LOW);
     digitalWrite(coil2Pin, HIGH);
     digitalWrite(coil3Pin, LOW);
     break;
-
   default:
     digitalWrite(coil1Pin, LOW);
     digitalWrite(coil2Pin, LOW);
     digitalWrite(coil3Pin, HIGH);
-
     break;
   }
 
@@ -159,16 +145,8 @@ void badTone()
 {
   tone(tonePin, 400, 250);
 }
-void startTone()
-{
-  tone(tonePin, 500, 40);
-  tone(tonePin, 800, 80);
-  tone(tonePin, 1300, 150);
-}
 void finishTone()
 {
-  tone(tonePin, 1300, 40);
-  tone(tonePin, 800, 80);
   tone(tonePin, 1300, 150);
 }
 
@@ -186,13 +164,10 @@ void setup(void)
 
   u8g2.begin();
 
-  u8g2.setFont(u8g2_font_logisoso18_tf);
+  u8g2.setFont(u8g2_font_crox3hb_tr);
   u8g2.setFontPosCenter(); // set the target font to calculate the pixel width
-  // width = u8g2.getUTF8Width(text);		// calculate the pixel width of the text
-
   u8g2.setFontMode(0); // enable transparent mode, which is faster
   timer_init_ISR_1KHz(TIMER_DEFAULT);
-  // updateScreen();
   secToTime();
 }
 
@@ -226,7 +201,7 @@ void loop(void)
     }
     else
     {
-      startTone();
+      finishTone();
     }
     updateScreen();
     delay(50);
@@ -297,9 +272,9 @@ void timer_handle_interrupts(int timer)
   {
     if (motorCount == 0)
     {
-      unsigned long _time = micros();
-      unsigned long _period = _time - prev_time;
-      prev_time = _time;
+      // unsigned long _time = micros();
+      // unsigned long _period = _time - prev_time;
+      // prev_time = _time;
 
       if (onAction && !onPause)
       {
