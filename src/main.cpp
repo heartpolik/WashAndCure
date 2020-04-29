@@ -7,18 +7,18 @@
 U8G2_SSD1306_128X64_NONAME_1_SW_I2C u8g2(U8G2_R0, /* clock=*/SCL, /* data=*/SDA, /* reset=*/U8X8_PIN_NONE); // All Boards without Reset of the Display
 
 const int modesCount = 2;
-const int timesCount = 5;
+const int timesCount = 6;
 
-const int timeouts[timesCount] = {1, 5, 10, 20, 30};
+const int timeouts[timesCount] = {1, 5, 10, 20, 30, 60};
 const char *modes[modesCount] = {"Wash", "Cure"};
 const char *activeModes[modesCount] = {"Washing", "Curing"};
-const int motorSpeed[modesCount] = {25, 400};
+const int pulseLength = 10;
+const int motorSpeed[modesCount] = {25, 10000};
 
-const int coil1Pin = 3;
-const int coil2Pin = 5;
-const int coil3Pin = 6;
-const int lampPin = 9;
-const int tonePin = 11;
+const int stepPin = 3;
+const int enPin = 5;
+const int lampPin = 8;
+const int tonePin = 9;
 
 const int modeBtn = 2;
 const int timePauseBtn = 4;
@@ -29,7 +29,6 @@ const int secondStringPos = 51;
 
 char cstr[16];
 
-int activeCoil;
 int mode = 0;
 int time = 0;
 int endstop = 60;
@@ -93,36 +92,11 @@ void menuScreen()
   } while (u8g2.nextPage());
 }
 
-void rotateMotor()
-{
-  switch (activeCoil)
-  {
-  case 1:
-    digitalWrite(coil1Pin, HIGH);
-    digitalWrite(coil2Pin, LOW);
-    digitalWrite(coil3Pin, LOW);
-    break;
-  case 2:
-    digitalWrite(coil1Pin, LOW);
-    digitalWrite(coil2Pin, HIGH);
-    digitalWrite(coil3Pin, LOW);
-    break;
-  default:
-    digitalWrite(coil1Pin, LOW);
-    digitalWrite(coil2Pin, LOW);
-    digitalWrite(coil3Pin, HIGH);
-    break;
-  }
-
-  activeCoil = (activeCoil + 1) % 3;
-}
-
 void stopAll()
 {
-  digitalWrite(coil1Pin, LOW);
-  digitalWrite(coil2Pin, LOW);
-  digitalWrite(coil3Pin, LOW);
+  digitalWrite(stepPin, LOW);
   digitalWrite(lampPin, LOW);
+  digitalWrite(enPin, HIGH);
 }
 
 void updateScreen()
@@ -156,24 +130,25 @@ void setup(void)
   pinMode(modeBtn, INPUT);
   pinMode(startStopBtn, INPUT);
   pinMode(timePauseBtn, INPUT);
-  pinMode(coil1Pin, OUTPUT);
-  pinMode(coil2Pin, OUTPUT);
-  pinMode(coil3Pin, OUTPUT);
+  pinMode(stepPin, OUTPUT);
+  pinMode(enPin, OUTPUT);
   pinMode(lampPin, OUTPUT);
   pinMode(tonePin, OUTPUT);
+  digitalWrite(enPin, HIGH);
 
   u8g2.begin();
 
   u8g2.setFont(u8g2_font_crox3hb_tr);
   u8g2.setFontPosCenter(); // set the target font to calculate the pixel width
   u8g2.setFontMode(0); // enable transparent mode, which is faster
-  timer_init_ISR_1KHz(TIMER_DEFAULT);
+  timer_init_ISR_10KHz(TIMER_DEFAULT);
   secToTime();
 }
 
 void loop(void)
 {
   updateScreen();
+  digitalWrite(enPin, (onAction && !onPause) ? LOW : HIGH);
   if (digitalRead(modeBtn) == HIGH)
   {
     if (onAction)
@@ -204,6 +179,7 @@ void loop(void)
       finishTone();
     }
     updateScreen();
+    digitalWrite(enPin, (onAction && !onPause) ? LOW : HIGH);
     delay(50);
   }
   if (digitalRead(timePauseBtn) == HIGH)
@@ -234,6 +210,7 @@ void loop(void)
       changeTime();
     }
     updateScreen();
+    digitalWrite(enPin, (onAction && !onPause) ? LOW : HIGH);
     delay(50);
   }
 
@@ -257,11 +234,9 @@ void loop(void)
 }
 void timer_handle_interrupts(int timer)
 {
-  static unsigned long prev_time = 0;
-
   // дополнильный множитель периода
   static int motorCount = motorSpeed[mode];
-  static int timeoutCount = 1000;
+  static int timeoutCount = 10000; //1sec
 
   // Печатаем сообщение на каждый 12й вызов прерывания:
   // если базовая частота 10Гц и базовый период 100мс,
@@ -270,32 +245,36 @@ void timer_handle_interrupts(int timer)
 
   if (onAction && !onPause && endstop > 0)
   {
-    if (motorCount == 0)
-    {
-      // unsigned long _time = micros();
-      // unsigned long _period = _time - prev_time;
-      // prev_time = _time;
 
-      if (onAction && !onPause)
+    //  if (motorCount == pulseLength + 5 && mode == 1){ 
+    //       digitalWrite(enPin, LOW);
+    //   }
+      if (motorCount == pulseLength){ 
+        digitalWrite(stepPin, HIGH);
+      }
+      if (motorCount == 0)
       {
-        rotateMotor();
+        // if (mode == 1){
+        //   digitalWrite(enPin, HIGH);
+        // }
+        digitalWrite(stepPin, LOW);
+      // взводим счетчик
+        motorCount = motorSpeed[mode];
+      }
+      else
+      {
+        motorCount--;
       }
 
-      // взводим счетчик
-      motorCount = motorSpeed[mode];
-    }
-    else
-    {
-      motorCount--;
-    }
-    if (timeoutCount == 0)
-    {
-      endstop--;
-      timeoutCount = 1000;
-    }
-    else
-    {
-      timeoutCount--;
-    }
+      // seconds timer
+      if (timeoutCount == 0)
+      {
+        endstop--;
+        timeoutCount = 10000;
+      }
+      else
+      {
+        timeoutCount--;
+      }
   }
 }
