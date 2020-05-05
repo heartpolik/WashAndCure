@@ -15,8 +15,8 @@ const char *activeModes[modesCount] = {"Washing", "Curing"};
 const int pulseLength = 10;
 const int motorSpeed[modesCount] = {25, 10000};
 
-const int stepPin = 3;
-const int enPin = 5;
+const int stepPin = 11;
+const int enPin = 12;
 const int lampPin = 8;
 const int tonePin = 9;
 
@@ -246,10 +246,10 @@ void timer_handle_interrupts(int timer)
   if (onAction && !onPause && endstop > 0)
   {
 
-    //  if (motorCount == pulseLength + 5 && mode == 1){ 
+    //  if (motorCount == pulseLength + 5 && mode == 1){
     //       digitalWrite(enPin, LOW);
     //   }
-      if (motorCount == pulseLength){ 
+      if (motorCount == pulseLength){
         digitalWrite(stepPin, HIGH);
       }
       if (motorCount == 0)
@@ -270,7 +270,6 @@ void timer_handle_interrupts(int timer)
       if (timeoutCount == 0)
       {
         endstop--;
-        timeoutCount = 10000;
       }
       else
       {
