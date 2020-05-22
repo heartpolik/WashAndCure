@@ -12,9 +12,12 @@ const int timesCount = 6;
 const int timeouts[timesCount] = {1, 5, 10, 20, 30, 60};
 const char *modes[modesCount] = {"Wash", "Cure"};
 const char *activeModes[modesCount] = {"Washing", "Curing"};
-const int pulseLength = 10;
-const int motorSpeed[modesCount] = {25, 10000};
+const int pulseLength = 15;
+int mode = 0;
+const int minSpeed[modesCount] = {1000, 16500};
+const int motorSpeed[modesCount] = {25, 16000};
 
+int currSpeed = minSpeed[mode];
 const int stepPin = 11;
 const int enPin = 12;
 const int lampPin = 8;
@@ -29,7 +32,7 @@ const int secondStringPos = 51;
 
 char cstr[16];
 
-int mode = 0;
+
 int time = 0;
 int endstop = 60;
 char secToStr[6];
@@ -40,10 +43,15 @@ bool onAction = false;
 void changeMode()
 {
   mode = (mode + 1) % modesCount;
+  currSpeed = minSpeed[mode];
 }
 
 void secToTime()
 {
+  if (currSpeed > motorSpeed[mode]){
+           sprintf(secToStr, "%s", "SpdUp");    
+        }
+        else {
   if (endstop % 60 > 9)
   {
     sprintf(secToStr, "%i:%i", endstop / 60, endstop % 60);
@@ -52,7 +60,7 @@ void secToTime()
   {
     sprintf(secToStr, "%i:0%i", endstop / 60, endstop % 60);
   }
-}
+}}
 
 void changeTime()
 {
@@ -94,6 +102,7 @@ void menuScreen()
 
 void stopAll()
 {
+  currSpeed = minSpeed[mode];
   digitalWrite(stepPin, LOW);
   digitalWrite(lampPin, LOW);
   digitalWrite(enPin, HIGH);
@@ -218,6 +227,7 @@ void loop(void)
   {
     if (endstop > 0)
     {
+      
       secToTime();
       if (mode == 1)
       {
@@ -235,7 +245,7 @@ void loop(void)
 void timer_handle_interrupts(int timer)
 {
   // дополнильный множитель периода
-  static int motorCount = motorSpeed[mode];
+  static int motorCount = currSpeed;
   static int timeoutCount = 10000; //1sec
 
   // Печатаем сообщение на каждый 12й вызов прерывания:
@@ -259,7 +269,9 @@ void timer_handle_interrupts(int timer)
         // }
         digitalWrite(stepPin, LOW);
       // взводим счетчик
-        motorCount = motorSpeed[mode];
+      if (currSpeed > motorSpeed[mode])
+       { currSpeed = currSpeed - currSpeed/20 ;}
+        motorCount = currSpeed;
       }
       else
       {
@@ -269,7 +281,11 @@ void timer_handle_interrupts(int timer)
       // seconds timer
       if (timeoutCount == 0)
       {
-        endstop--;
+        if (currSpeed <= motorSpeed[mode]){
+           endstop--;    
+        }
+        
+        timeoutCount = 10000;
       }
       else
       {
