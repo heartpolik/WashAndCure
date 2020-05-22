@@ -4,6 +4,8 @@
 #include "timer-api.h"
 #include <Wire.h>
 
+
+
 U8G2_SSD1306_128X64_NONAME_1_SW_I2C u8g2(U8G2_R0, /* clock=*/SCL, /* data=*/SDA, /* reset=*/U8X8_PIN_NONE); // All Boards without Reset of the Display
 
 const int modesCount = 2;
@@ -14,12 +16,16 @@ const char *modes[modesCount] = {"Wash", "Cure"};
 const char *activeModes[modesCount] = {"Washing", "Curing"};
 const int pulseLength = 15;
 int mode = 0;
-const int minSpeed[modesCount] = {1000, 16500};
-const int motorSpeed[modesCount] = {25, 16000};
+const int minSpeed[modesCount] = {1000, 1000};
+const int motorSpeed[modesCount] = {26, 1000};
 
 int currSpeed = minSpeed[mode];
 const int stepPin = 11;
 const int enPin = 12;
+
+const int ms1 = 6;
+const int ms2 = 5;
+const int ms3 = 3;
 const int lampPin = 8;
 const int tonePin = 9;
 
@@ -44,6 +50,15 @@ void changeMode()
 {
   mode = (mode + 1) % modesCount;
   currSpeed = minSpeed[mode];
+  if (mode == 1){
+    digitalWrite(ms1, HIGH);
+    digitalWrite(ms2, HIGH);
+    digitalWrite(ms3, HIGH);
+  } else {
+    digitalWrite(ms1, LOW);
+    digitalWrite(ms2, LOW);
+    digitalWrite(ms3, LOW);
+  }
 }
 
 void secToTime()
@@ -142,7 +157,11 @@ void setup(void)
   pinMode(stepPin, OUTPUT);
   pinMode(enPin, OUTPUT);
   pinMode(lampPin, OUTPUT);
+  digitalWrite(lampPin, LOW);
   pinMode(tonePin, OUTPUT);
+  pinMode(ms1, OUTPUT);
+  pinMode(ms2, OUTPUT);
+  pinMode(ms3, OUTPUT);
   digitalWrite(enPin, HIGH);
 
   u8g2.begin();
@@ -162,7 +181,8 @@ void loop(void)
   {
     if (onAction)
     {
-      badTone();
+      goodTone();
+      endstop += 60;
     }
     else
     {
